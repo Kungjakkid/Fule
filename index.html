@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS เหมือนเดิม ไม่ต้องแก้ไข */
         :root {
             --primary-color: #3ecf8e;
             --secondary-color: #6c757d;
@@ -70,14 +69,14 @@
         const form = document.getElementById('fuel-form');
         const logsList = document.getElementById('logs-list');
         
-        // --- 2. ตั้งค่าการเชื่อมต่อ SUPABASE ---
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- วาง URL ที่คัดลอกมาที่นี่
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- วาง Key ที่คัดลอกมาที่นี่
+        // --- vvv ข้อมูลของคุณถูกใส่ไว้ตรงนี้แล้ว vvv ---
+        const SUPABASE_URL = 'https://rwwybgwnyhmglzfknnbn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3d3liZ3dueWhtZ2x6ZmtubmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODE2MjYsImV4cCI6MjA3NDI1NzYyNn0.x0mhAUUA5-dpt4J0hPeSmz5DvJ1vtMiPZNB-QQvlMJM';
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // --- โค้ดส่วน JavaScript ที่เหลือจะถูกแก้ไขทั้งหมด ---
-        const ICONS = { /* ... ไอคอน SVG เหมือนเดิม ... */
+        const ICONS = {
             calendar: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>`,
             speedometer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-14h2v2.27l-2 2V6zm-.5 5c0 .55.45 1 1 1s1-.45 1-1-.45-1-1-1-1 .45-1 1zm4 2.85l-2.8-2.8V15h-1.4v-4.03l-2.8 2.8-1.06-1.06L12 10.9l3.56 3.56L16.5 13.85z"/></svg>`,
             gas: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h5v3l-3-3h-2c-2.21 0-4-1.79-4-4V5c0-2.21 1.79-4 4-4h1V0h-1C7.48 0 4 3.48 4 8v12h10v-3h-4v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-5z"/></svg>`,
@@ -86,24 +85,14 @@
             trash: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
         };
 
-        // ฟังก์ชันสำหรับดึงข้อมูลจาก Supabase
         async function fetchLogs() {
-            const { data, error } = await supabase
-                .from('fuel_logs')
-                .select('*')
-                .order('date', { ascending: false }); // เรียงจากใหม่ไปเก่า
-
-            if (error) {
-                console.error('Error fetching logs:', error);
-                return [];
-            }
+            const { data, error } = await supabaseClient.from('fuel_logs').select('*').order('date', { ascending: false });
+            if (error) { console.error('Error fetching logs:', error); return []; }
             return data;
         }
 
-        // ฟังก์ชันสำหรับแสดงผล
         function renderLogs(logs) {
             logsList.innerHTML = '';
-            
             const kmplMap = new Map();
             const sortedForCalc = [...logs].sort((a, b) => parseFloat(a.odometer) - parseFloat(b.odometer));
 
@@ -137,7 +126,6 @@
             });
         }
 
-        // จัดการเมื่อฟอร์มถูกกด "บันทึกข้อมูล"
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const newLog = {
@@ -146,44 +134,24 @@
                 liters: document.getElementById('liters').value,
                 price_total: document.getElementById('price_total').value
             };
-
-            const { error } = await supabase.from('fuel_logs').insert([newLog]);
-
-            if (error) {
-                console.error('Error adding log:', error);
-                alert('ไม่สามารถบันทึกข้อมูลได้: ' + error.message);
-            } else {
-                const logs = await fetchLogs();
-                renderLogs(logs);
-                form.reset();
-            }
+            const { error } = await supabaseClient.from('fuel_logs').insert([newLog]);
+            if (error) { alert('ไม่สามารถบันทึกข้อมูลได้: ' + error.message); } 
+            else { renderLogs(await fetchLogs()); form.reset(); }
         });
         
-        // จัดการเมื่อปุ่ม "ลบ" ถูกกด
         logsList.addEventListener('click', async (e) => {
             const deleteButton = e.target.closest('.delete-btn');
             if (deleteButton) {
                 const logId = parseInt(deleteButton.getAttribute('data-id'));
                 if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
-                     const { error } = await supabase
-                        .from('fuel_logs')
-                        .delete()
-                        .eq('id', logId);
-
-                    if (error) {
-                        console.error('Error deleting log:', error);
-                        alert('ไม่สามารถลบข้อมูลได้: ' + error.message);
-                    } else {
-                        const logs = await fetchLogs();
-                        renderLogs(logs);
-                    }
+                     const { error } = await supabaseClient.from('fuel_logs').delete().eq('id', logId);
+                    if (error) { alert('ไม่สามารถลบข้อมูลได้: ' + error.message); } 
+                    else { renderLogs(await fetchLogs()); }
                 }
             }
         });
 
-        // ดึงข้อมูลและแสดงผลครั้งแรก
-        const initialLogs = await fetchLogs();
-        renderLogs(initialLogs);
+        renderLogs(await fetchLogs());
     });
     </script>
 </body>
