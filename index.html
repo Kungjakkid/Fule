@@ -144,8 +144,8 @@
         <div class="dashboard" id="dashboard">
             <div class="dash-card"><div class="label">อัตราสิ้นเปลืองเฉลี่ย</div><div class="value"><span id="avg-kmpl">-.--</span><span class="unit">กม./ลิตร</span></div></div>
             <div class="dash-card"><div class="label">ค่าใช้จ่ายทั้งหมด</div><div class="value"><span id="total-cost">-.--</span><span class="unit">บาท</span></div></div>
-            <div class="dash-card"><div class="label">ระยะทางทั้งหมด</div><div class="value"><span id="total-distance">-.--</span><span class="unit">กม.</span></div></div>
             <div class="dash-card"><div class="label">ค่าใช้จ่ายถังล่าสุด</div><div class="value"><span id="last-tank-cost">-.--</span><span class="unit">บาท</span></div></div>
+            <div class="dash-card"><div class="label">ระยะทางถังล่าสุด</div><div class="value"><span id="distance-last-tank">-.--</span><span class="unit">กม.</span></div></div>
         </div>
 
         <div class="form-card">
@@ -207,8 +207,8 @@
         const dashboardEl = {
             avgKmpl: document.getElementById('avg-kmpl'),
             totalCost: document.getElementById('total-cost'),
-            totalDistance: document.getElementById('total-distance'),
-            lastTankCost: document.getElementById('last-tank-cost'), // <-- Element ใหม่
+            lastTankCost: document.getElementById('last-tank-cost'),
+            distanceLastTank: document.getElementById('distance-last-tank'), // <-- Element ใหม่
         };
         const filterDateEl = document.getElementById('filter-date');
         const sortByEl = document.getElementById('sort-by');
@@ -233,48 +233,55 @@
             renderDashboard();
         }
 
-        // vvv JavaScript ที่แก้ไข vvv
         function renderDashboard() {
             // Reset ค่าเริ่มต้นทั้งหมด
             dashboardEl.avgKmpl.textContent = '0.00';
             dashboardEl.totalCost.textContent = '0.00';
-            dashboardEl.totalDistance.textContent = '0';
             dashboardEl.lastTankCost.textContent = '-.--';
+            dashboardEl.distanceLastTank.textContent = '-.--'; // <-- Reset ค่าใหม่
 
             if (allLogs.length === 0) return;
 
-            // คำนวณค่าใช้จ่ายทั้งหมด (แสดงผลได้แม้มีข้อมูลเดียว)
             const totalCost = allLogs.reduce((sum, log) => sum + parseFloat(log.price_total), 0);
             dashboardEl.totalCost.textContent = totalCost.toLocaleString('en-US', {minimumFractionDigits: 2});
             
-            // การคำนวณอื่นๆ ต้องมีข้อมูลอย่างน้อย 2 รายการ
             if (allLogs.length < 2) return;
 
             const sortedByOdo = [...allLogs].sort((a,b) => parseFloat(a.odometer) - parseFloat(b.odometer));
             
-            // คำนวณระยะทาง & อัตราสิ้นเปลืองเฉลี่ย
-            const totalDistance = parseFloat(sortedByOdo[sortedByOdo.length - 1].odometer) - parseFloat(sortedByOdo[0].odometer);
-            const totalLiters = sortedByOdo.slice(1).reduce((sum, log) => sum + parseFloat(log.liters), 0);
-            const avgKmpl = totalLiters > 0 ? (totalDistance / totalLiters) : 0;
+            // คำนวณภาพรวม
+            const totalDistanceOverall = parseFloat(sortedByOdo[sortedByOdo.length - 1].odometer) - parseFloat(sortedByOdo[0].odometer);
+            const totalLitersOverall = sortedByOdo.slice(1).reduce((sum, log) => sum + parseFloat(log.liters), 0);
+            const avgKmpl = totalLitersOverall > 0 ? (totalDistanceOverall / totalLitersOverall) : 0;
             
-            // คำนวณค่าใช้จ่ายถังล่าสุด
+            // คำนวณข้อมูลถังล่าสุด
             const lastTankCost = sortedByOdo[sortedByOdo.length - 2].price_total;
+            const distanceLastTank = parseFloat(sortedByOdo[sortedByOdo.length - 1].odometer) - parseFloat(sortedByOdo[sortedByOdo.length - 2].odometer);
 
             // แสดงผลลัพธ์
             dashboardEl.avgKmpl.textContent = avgKmpl.toFixed(2);
-            dashboardEl.totalDistance.textContent = totalDistance.toLocaleString();
             dashboardEl.lastTankCost.textContent = parseFloat(lastTankCost).toLocaleString('en-US', {minimumFractionDigits: 2});
+            dashboardEl.distanceLastTank.textContent = distanceLastTank.toLocaleString(); // <-- แสดงผลค่าใหม่
         }
 
-        function applyFiltersAndSort() {
-            // ... โค้ดส่วนนี้เหมือนเดิม ...
-        }
-        
-        function renderLogs(logs) {
-            // ... โค้ดส่วนนี้เหมือนเดิม ...
-        }
-        
         // ... โค้ดส่วนที่เหลือทั้งหมดเหมือนเดิม ...
+        
+        function applyFiltersAndSort() { /* ... no change ... */ }
+        function renderLogs(logs) { /* ... no change ... */ }
+        function openEditModal(log) { /* ... no change ... */ }
+        function closeEditModal() { /* ... no change ... */ }
+        function calculateKmpl(logs) { /* ... no change ... */ }
+        function populateDateFilter() { /* ... no change ... */ }
+
+        // Event Listeners
+        filterDateEl.addEventListener('change', applyFiltersAndSort);
+        sortByEl.addEventListener('change', applyFiltersAndSort);
+        fuelForm.addEventListener('submit', async (e) => { /* ... no change ... */ });
+        editFormEl.addEventListener('submit', async (e) => { /* ... no change ... */ });
+        document.getElementById('cancel-edit').addEventListener('click', closeEditModal);
+        logsListEl.addEventListener('click', async (e) => { /* ... no change ... */ });
+
+        await loadAndRender();
     });
     </script>
 </body>
