@@ -155,7 +155,7 @@
             <form id="fuel-form">
                 <div class="form-group"><label for="date">วันที่เติม</label><input type="date" id="date" required></div>
                 <div class="form-group"><label for="odometer">เลขไมล์ (กม.)</label><input type="number" id="odometer" placeholder="150000" required></div>
-                <div class="form-group"><label for="liters">จำนวน (ลิตร)</label><input type="number" id="liters" step="0.01" placeholder="40.55" required></div>
+                <div class="form-group"><label for="liters">จำนวน (ลิตร)</label><input type="number" id="liters" step="0.001" placeholder="40.555" required></div>
                 <div class="form-group"><label for="price_total">ราคารวม (บาท)</label><input type="number" id="price_total" step="0.01" placeholder="1200.00" required></div>
                 <button type="submit" class="submit-btn" id="submit-btn">
                     <span class="btn-text">บันทึกข้อมูล</span>
@@ -207,7 +207,7 @@
         }
 
         function renderLogs(logs) {
-            if (!logs) { // เพิ่มการตรวจสอบเผื่อกรณี logs เป็น undefined
+            if (!logs) {
                 emptyState.classList.add('show');
                 logsList.innerHTML = '';
                 logsHeader.style.display = 'none';
@@ -247,7 +247,7 @@
                         <div class="log-item"><span class="label">${ICONS.calendar} วันที่</span><span class="value">${new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric'})}</span></div>
                         <div class="log-item"><span class="label">${ICONS.speedometer} เลขไมล์</span><span class="value">${parseFloat(log.odometer).toLocaleString()} กม.</span></div>
                         <div class="log-item"><span class="label">${ICONS.road} อัตราสิ้นเปลือง</span><span class="value highlight">${kmpl} กม./ลิตร</span></div>
-                        <div class="log-item"><span class="label">${ICONS.gas} จำนวน</span><span class="value">${parseFloat(log.liters).toFixed(2)} ลิตร</span></div>
+                        <div class="log-item"><span class="label">${ICONS.gas} จำนวน</span><span class="value">${parseFloat(log.liters).toFixed(3)} ลิตร</span></div>
                         <div class="log-item"><span class="label">${ICONS.money} ราคารวม</span><span class="value">${parseFloat(log.price_total).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
                         <div class="log-item"><span class="label">${ICONS.money} ราคา/ลิตร</span><span class="value">${pricePerLiter} ฿</span></div>
                     `;
