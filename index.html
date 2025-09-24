@@ -35,7 +35,6 @@
         h1 { margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         h2 { margin-top: 40px; margin-bottom: 20px; color: var(--dark-color); }
         
-        /* --- Dashboard --- */
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -54,7 +53,6 @@
         .dash-card .value { font-size: 1.8em; font-weight: 700; color: var(--primary-color); }
         .dash-card .unit { font-size: 0.8em; margin-left: 4px; color: var(--secondary-color); }
 
-        /* --- Form Card (Glassmorphism) --- */
         .form-card {
             background: var(--card-bg);
             padding: 30px 35px;
@@ -77,7 +75,6 @@
             box-shadow: 0 0 0 4px rgba(61, 82, 213, 0.15);
         }
 
-        /* --- Filter & Sort --- */
         .filter-sort-controls {
             display: flex; gap: 15px; margin-bottom: 20px; background: var(--card-bg);
             padding: 15px; border-radius: var(--border-radius); box-shadow: var(--box-shadow);
@@ -85,7 +82,6 @@
         }
         .filter-sort-controls > div { flex: 1; min-width: 150px; }
         
-        /* --- Log Cards --- */
         .log-card {
             background: #ffffff; border-radius: var(--border-radius); box-shadow: var(--box-shadow);
             margin-bottom: 20px; padding: 20px; display: grid;
@@ -98,7 +94,6 @@
         .log-card:hover { transform: translateY(-5px); box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12); }
         .log-item .value.highlight { color: var(--success-color); font-size: 1.5em; }
 
-        /* --- Action Buttons (Edit/Delete) --- */
         .card-actions {
             position: absolute; top: 15px; right: 15px; display: flex; gap: 5px;
         }
@@ -110,7 +105,6 @@
         .edit-btn svg { color: var(--warning-color); }
         .delete-btn svg { color: var(--danger-color); }
 
-        /* --- Edit Modal --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
@@ -181,7 +175,7 @@
             </div>
         </div>
         
-        <div class="logs-container">
+        <div class="logs-container" id="logs-container">
             <div id="logs-list"></div>
             </div>
 
@@ -209,7 +203,48 @@
         const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- ใส่ URL ของคุณ
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- ใส่ Key ของคุณ
 
-        // ... (โค้ด JavaScript ที่เหลือเหมือนเดิมทุกประการ)
+        const dashboardEl = {
+            avgKmpl: document.getElementById('avg-kmpl'),
+            totalCost: document.getElementById('total-cost'),
+            totalDistance: document.getElementById('total-distance'),
+        };
+        const filterDateEl = document.getElementById('filter-date');
+        const sortByEl = document.getElementById('sort-by');
+        const logsListEl = document.getElementById('logs-list');
+        const fuelForm = document.getElementById('fuel-form');
+        const editModalEl = document.getElementById('edit-modal');
+        const editFormEl = document.getElementById('edit-form');
+        const logsContainer = document.getElementById('logs-container');
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // ... (โค้ด JavaScript ที่เหลือทั้งหมดใส่ที่นี่)
+
+        async function loadAndRender() {
+            // ...
+        }
+
+        fuelForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // ...
+            try {
+                // ...
+                const { error } = await supabaseClient.from('fuel_logs').insert([newLog]);
+                if (error) {
+                    alert('ไม่สามารถบันทึกข้อมูลได้: ' + error.message);
+                } else {
+                    fuelForm.reset();
+                    await loadAndRender(); // <<< บรรทัดที่แก้ไข
+                }
+            } catch (err) {
+                // ...
+            } finally {
+                // ...
+            }
+        });
+
+        // ... (โค้ดส่วนที่เหลือ)
     });
     </script>
 </body>
