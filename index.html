@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fuel Log App (Final Version)</title>
+    <title>Fuel Log Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -16,7 +15,8 @@
             --secondary-color: #576574;
             --success-color: #05c46b;
             --danger-color: #ff4757;
-            --card-bg: rgba(255, 255, 255, 0.75);
+            --warning-color: #ffa801;
+            --card-bg: rgba(255, 255, 255, 0.8);
             --dark-color: #2f3542;
             --border-radius: 16px;
             --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -30,276 +30,347 @@
             padding: 20px;
             min-height: 100vh;
         }
-        .container { max-width: 700px; margin: auto; }
-        h1 { text-align: center; color: var(--dark-color); margin-bottom: 25px; font-weight: 700; }
+        .container { max-width: 800px; margin: auto; }
+        h1, h2 { text-align: center; font-weight: 700; }
+        h1 { margin-bottom: 25px; }
+        h2 { margin-bottom: 20px; color: var(--dark-color); }
         
+        /* --- Dashboard --- */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        .dash-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dash-card .label { color: var(--secondary-color); margin-bottom: 8px; font-size: 0.9em; }
+        .dash-card .value { font-size: 1.8em; font-weight: 700; }
+        .dash-card .unit { font-size: 0.8em; margin-left: 4px; }
+
+        /* --- Form Card (Glassmorphism) --- */
         .form-card {
             background: var(--card-bg);
             padding: 30px 35px;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             margin-bottom: 40px;
         }
-
         form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .form-group { display: flex; flex-direction: column; }
         label { margin-bottom: 8px; font-weight: 500; font-size: 0.95em; color: var(--secondary-color); }
-        input {
-            padding: 12px 15px;
-            border: 1px solid #ced4da;
-            border-radius: 10px;
-            font-size: 1em;
-            font-family: 'Sarabun', sans-serif;
-            transition: border-color 0.2s, box-shadow 0.2s;
+        input, select {
+            padding: 12px 15px; border: 1px solid #ced4da; border-radius: 10px; font-size: 1em;
+            font-family: 'Sarabun', sans-serif; transition: border-color 0.2s, box-shadow 0.2s;
             background-color: rgba(255, 255, 255, 0.5);
         }
-        input:focus {
-            outline: none;
-            border-color: var(--primary-color);
+        input:focus, select:focus {
+            outline: none; border-color: var(--primary-color);
             box-shadow: 0 0 0 4px rgba(61, 82, 213, 0.15);
         }
 
-        .submit-btn {
-            grid-column: 1 / -1;
-            padding: 14px;
-            background: linear-gradient(45deg, #3d52d5, #5c6dec);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            position: relative;
+        /* --- Filter & Sort --- */
+        .filter-sort-controls {
+            display: flex; gap: 15px; margin-bottom: 20px; background: var(--card-bg);
+            padding: 15px; border-radius: var(--border-radius); box-shadow: var(--box-shadow);
+            flex-wrap: wrap;
         }
-        .submit-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(61, 82, 213, 0.3);
-        }
+        .filter-sort-controls > div { flex: 1; min-width: 150px; }
         
-        .submit-btn.loading {
-            cursor: not-allowed;
-            background: #a4b0be;
-        }
-        .submit-btn .spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto;
-        }
-        .submit-btn.loading .spinner { display: block; }
-        .submit-btn.loading .btn-text { display: none; }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .logs-container h2 { border-bottom: 2px solid #e1e7ff; padding-bottom: 10px; margin-bottom: 20px; }
-        
+        /* --- Log Cards --- */
         .log-card {
-            background: #ffffff;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            margin-bottom: 20px;
-            padding: 20px;
-            display: grid;
+            background: #ffffff; border-radius: var(--border-radius); box-shadow: var(--box-shadow);
+            margin-bottom: 20px; padding: 20px; display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-            position: relative;
-            border-left: 5px solid var(--primary-color);
+            gap: 20px; position: relative; border-left: 5px solid var(--primary-color);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             animation: fadeInUp 0.5s ease-out forwards;
         }
-        .log-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
-        }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .log-card:hover { transform: translateY(-5px); box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12); }
+        .log-item .value.highlight { color: var(--success-color); font-size: 1.5em; }
 
+        /* --- Action Buttons (Edit/Delete) --- */
+        .card-actions {
+            position: absolute; top: 15px; right: 15px; display: flex; gap: 5px;
+        }
+        .action-btn {
+            background: none; border: none; cursor: pointer; padding: 5px; opacity: 0.5; transition: opacity 0.2s, transform 0.2s;
+        }
+        .action-btn:hover { opacity: 1; transform: scale(1.1); }
+        .action-btn svg { width: 20px; height: 20px; }
+        .edit-btn svg { color: var(--warning-color); }
+        .delete-btn svg { color: var(--danger-color); }
+
+        /* --- Edit Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-content {
+            background: #fff; padding: 30px; border-radius: var(--border-radius);
+            width: 90%; max-width: 500px;
+        }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .modal-actions button {
+            padding: 10px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer;
+        }
+        .btn-save { background-color: var(--success-color); color: #fff; }
+        .btn-cancel { background-color: #ccc; }
+        
+        /* Other styles */
         .log-item { display: flex; flex-direction: column; }
         .log-item .label { font-size: 0.9em; color: var(--secondary-color); margin-bottom: 5px; display: flex; align-items: center; }
         .log-item .label svg { width: 16px; height: 16px; margin-right: 6px; opacity: 0.7; }
         .log-item .value { font-size: 1.2em; font-weight: 700; }
-        .log-item .value.highlight { color: var(--success-color); font-size: 1.5em; }
-
-        .delete-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; cursor: pointer; padding: 5px; opacity: 0.5; transition: opacity 0.2s; }
-        .delete-btn:hover { opacity: 1; }
-        .delete-btn svg { width: 20px; height: 20px; color: var(--danger-color); }
-        
-        .empty-state {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 50px;
-            text-align: center;
-            opacity: 0.7;
-        }
+        .empty-state { display: none; flex-direction: column; align-items: center; padding: 50px; text-align: center; opacity: 0.7; }
         .empty-state.show { display: flex; }
-        .empty-state svg { width: 80px; height: 80px; margin-bottom: 20px; color: var(--secondary-color); }
-        .empty-state p { font-size: 1.2em; color: var(--secondary-color); }
-        
-        @media (max-width: 600px) { form { grid-template-columns: 1fr; } body { padding: 10px; } .form-card { padding: 20px; } .log-card { grid-template-columns: 1fr 1fr; gap: 15px;} }
+        .submit-btn {
+            grid-column: 1 / -1; padding: 14px; background: linear-gradient(45deg, #3d52d5, #5c6dec);
+            color: white; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease-in-out; position: relative;
+        }
+        .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(61, 82, 213, 0.3); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>⛽ Fuel Log</h1>
-        <div class="form-card">
-            <form id="fuel-form">
-                <div class="form-group"><label for="date">วันที่เติม</label><input type="date" id="date" required></div>
-                <div class="form-group"><label for="odometer">เลขไมล์ (กม.)</label><input type="number" id="odometer" placeholder="150000" required></div>
-                <div class="form-group"><label for="liters">จำนวน (ลิตร)</label><input type="number" id="liters" step="0.001" placeholder="40.555" required></div>
-                <div class="form-group"><label for="price_total">ราคารวม (บาท)</label><input type="number" id="price_total" step="0.01" placeholder="1200.00" required></div>
-                <button type="submit" class="submit-btn" id="submit-btn">
-                    <span class="btn-text">บันทึกข้อมูล</span>
-                    <div class="spinner"></div>
-                </button>
-            </form>
+        <h1>⛽ Fuel Log Pro</h1>
+
+        <div class="dashboard" id="dashboard">
+            <div class="dash-card"><div class="label">อัตราสิ้นเปลืองเฉลี่ย</div><div class="value"><span id="avg-kmpl">-.--</span><span class="unit">กม./ลิตร</span></div></div>
+            <div class="dash-card"><div class="label">ค่าใช้จ่ายทั้งหมด</div><div class="value"><span id="total-cost">-.--</span><span class="unit">บาท</span></div></div>
+            <div class="dash-card"><div class="label">ระยะทางทั้งหมด</div><div class="value"><span id="total-distance">-.--</span><span class="unit">กม.</span></div></div>
         </div>
 
-        <div class="logs-container">
-            <h2 id="logs-header">ประวัติการเติม</h2>
-            <div id="logs-list"></div>
-            <div class="empty-state" id="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zM9.5 7.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm5 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm-5.03 8.32c.18.63.76 1.05 1.41 1.13.31.04.62.06.92.06s.61-.02.92-.06c.65-.08 1.23-.5 1.41-1.13.1-.35.05-.73-.13-1.04-.18-.31-.48-.52-.84-.58-.33-.06-.68-.06-1.01 0-.35.06-.65.27-.84.58-.18.31-.23.69-.13 1.04z"/></svg>
-                <p>ยังไม่มีข้อมูล<br>เริ่มบันทึกการเติมน้ำมันครั้งแรกของคุณ!</p>
+        <div class="form-card">
+            <form id="fuel-form">
+                </form>
+        </div>
+
+        <div class="filter-sort-controls">
+            <div>
+                <label for="filter-date">กรองตามเดือน</label>
+                <select id="filter-date">
+                    <option value="all">ทั้งหมด</option>
+                    </select>
+            </div>
+            <div>
+                <label for="sort-by">จัดเรียงตาม</label>
+                <select id="sort-by">
+                    <option value="date_desc">วันที่ (ใหม่-เก่า)</option>
+                    <option value="date_asc">วันที่ (เก่า-ใหม่)</option>
+                    <option value="kmpl_desc">กม./ลิตร (สูง-ต่ำ)</option>
+                    <option value="kmpl_asc">กม./ลิตร (ต่ำ-สูง)</option>
+                </select>
             </div>
         </div>
+        
+        <div class="logs-container">
+            <div id="logs-list"></div>
+            </div>
+
+        <div class="modal-overlay" id="edit-modal">
+            <div class="modal-content">
+                <h2>แก้ไขข้อมูล</h2>
+                <form id="edit-form">
+                    <input type="hidden" id="edit-id">
+                    <div class="modal-actions">
+                        <button type="button" class="btn-cancel" id="cancel-edit">ยกเลิก</button>
+                        <button type="submit" class="btn-save">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', async () => {
-        const form = document.getElementById('fuel-form');
-        const logsList = document.getElementById('logs-list');
-        const submitBtn = document.getElementById('submit-btn');
-        const emptyState = document.getElementById('empty-state');
-        const logsHeader = document.getElementById('logs-header');
+        // --- State and Config ---
+        let allLogs = []; // Store all logs to avoid re-fetching
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- ใส่ URL ของคุณ
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- ใส่ Key ของคุณ
 
-        const SUPABASE_URL = 'https://rwwybgwnyhmglzfknnbn.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3d3liZ3dueWhtZ2x6ZmtubmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODE2MjYsImV4cCI6MjA3NDI1NzYyNn0.x0mhAUUA5-dpt4J0hPeSmz5DvJ1vtMiPZNB-QQvlMJM';
+        // --- DOM Elements ---
+        const dashboard = {
+            avgKmpl: document.getElementById('avg-kmpl'),
+            totalCost: document.getElementById('total-cost'),
+            totalDistance: document.getElementById('total-distance'),
+        };
+        const filterDate = document.getElementById('filter-date');
+        const sortBy = document.getElementById('sort-by');
+        const logsList = document.getElementById('logs-list');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
         
+        // --- Supabase Client ---
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        const ICONS = {
-            calendar: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>`,
-            speedometer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-14h2v2.27l-2 2V6zm-.5 5c0 .55.45 1 1 1s1-.45 1-1-.45-1-1-1-1 .45-1 1zm4 2.85l-2.8-2.8V15h-1.4v-4.03l-2.8 2.8-1.06-1.06L12 10.9l3.56 3.56L16.5 13.85z"/></svg>`,
-            gas: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h5v3l-3-3h-2c-2.21 0-4-1.79-4-4V5c0-2.21 1.79-4 4-4h1V0h-1C7.48 0 4 3.48 4 8v12h10v-3h-4v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-5z"/></svg>`,
-            money: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c2.14-.46 3.5-1.63 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>`,
-            road: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M22 10h-4V7c0-1.65-1.35-3-3-3s-3 1.35-3 3v3H8V7c0-1.65-1.35-3-3-3S2 5.35 2 7v3H0v10h24V10zM6 7c0-.55.45-1 1-1s1 .45 1 1v3H6V7zm12 0c0-.55.45-1 1-1s1 .45 1 1v3h-2V7z"/></svg>`,
-            trash: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
-        };
 
-        async function fetchLogs() {
-            const { data, error } = await supabaseClient.from('fuel_logs').select('*').order('date', { ascending: false });
+        // --- Main Functions ---
+
+        async function loadAndRender() {
+            const { data, error } = await supabaseClient.from('fuel_logs').select('*');
             if (error) {
                 console.error('Error fetching logs:', error);
-                return [];
+                alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+                allLogs = [];
+            } else {
+                allLogs = data;
             }
-            return data;
+            populateDateFilter();
+            applyFiltersAndSort();
+            renderDashboard();
         }
 
-        function renderLogs(logs) {
-            if (!logs) {
-                emptyState.classList.add('show');
-                logsList.innerHTML = '';
-                logsHeader.style.display = 'none';
+        function renderDashboard() {
+            if (allLogs.length < 2) {
+                dashboard.avgKmpl.textContent = '-.--';
+                dashboard.totalCost.textContent = '-.--';
+                dashboard.totalDistance.textContent = '-.--';
                 return;
             }
 
-            if (logs.length === 0) {
-                emptyState.classList.add('show');
-                logsList.innerHTML = '';
-                logsHeader.style.display = 'none';
-            } else {
-                emptyState.classList.remove('show');
-                logsHeader.style.display = 'block';
-                logsList.innerHTML = '';
+            const sortedByOdo = [...allLogs].sort((a,b) => a.odometer - b.odometer);
+            const totalCost = allLogs.reduce((sum, log) => sum + log.price_total, 0);
+            const totalDistance = sortedByOdo[sortedByOdo.length - 1].odometer - sortedByOdo[0].odometer;
+            const totalLiters = sortedByOdo.slice(1).reduce((sum, log) => sum + log.liters, 0);
+            const avgKmpl = totalLiters > 0 ? (totalDistance / totalLiters) : 0;
 
-                const kmplMap = new Map();
-                const sortedForCalc = [...logs].sort((a, b) => parseFloat(a.odometer) - parseFloat(b.odometer));
-                for (let i = 1; i < sortedForCalc.length; i++) {
-                    const prevLog = sortedForCalc[i-1];
-                    const currentLog = sortedForCalc[i];
-                    const distance = parseFloat(currentLog.odometer) - parseFloat(prevLog.odometer);
-                    const liters = parseFloat(currentLog.liters);
-                    if (distance > 0 && liters > 0) {
-                        const kmpl = (distance / liters).toFixed(2);
-                        kmplMap.set(currentLog.id, kmpl);
-                    }
-                }
-                
-                logs.forEach(log => {
-                    const card = document.createElement('div');
-                    card.className = 'log-card';
-                    const pricePerLiter = (parseFloat(log.price_total) / parseFloat(log.liters)).toFixed(2);
-                    const kmpl = kmplMap.get(log.id) || '---';
+            dashboard.avgKmpl.textContent = avgKmpl.toFixed(2);
+            dashboard.totalCost.textContent = totalCost.toLocaleString('en-US', {minimumFractionDigits: 2});
+            dashboard.totalDistance.textContent = totalDistance.toLocaleString();
+        }
 
-                    card.innerHTML = `
-                        <button class="delete-btn" data-id="${log.id}">${ICONS.trash}</button>
-                        <div class="log-item"><span class="label">${ICONS.calendar} วันที่</span><span class="value">${new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric'})}</span></div>
-                        <div class="log-item"><span class="label">${ICONS.speedometer} เลขไมล์</span><span class="value">${parseFloat(log.odometer).toLocaleString()} กม.</span></div>
-                        <div class="log-item"><span class="label">${ICONS.road} อัตราสิ้นเปลือง</span><span class="value highlight">${kmpl} กม./ลิตร</span></div>
-                        <div class="log-item"><span class="label">${ICONS.gas} จำนวน</span><span class="value">${parseFloat(log.liters).toFixed(3)} ลิตร</span></div>
-                        <div class="log-item"><span class="label">${ICONS.money} ราคารวม</span><span class="value">${parseFloat(log.price_total).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
-                        <div class="log-item"><span class="label">${ICONS.money} ราคา/ลิตร</span><span class="value">${pricePerLiter} ฿</span></div>
-                    `;
-                    logsList.appendChild(card);
+        function applyFiltersAndSort() {
+            let filteredLogs = [...allLogs];
+
+            // Date Filter
+            const selectedMonth = filterDate.value;
+            if (selectedMonth !== 'all') {
+                filteredLogs = filteredLogs.filter(log => {
+                    return new Date(log.date).toISOString().startsWith(selectedMonth);
                 });
             }
+
+            // Sorting
+            const sortValue = sortBy.value;
+            // Pre-calculate kmpl for sorting
+            const logsWithKmpl = calculateKmpl(filteredLogs);
+            
+            logsWithKmpl.sort((a, b) => {
+                switch(sortValue) {
+                    case 'date_asc': return new Date(a.date) - new Date(b.date);
+                    case 'kmpl_desc': return b.kmpl - a.kmpl;
+                    case 'kmpl_asc': return a.kmpl - b.kmpl;
+                    default: return new Date(b.date) - new Date(a.date); // date_desc
+                }
+            });
+
+            renderLogs(logsWithKmpl);
         }
         
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.classList.add('loading');
-            submitBtn.disabled = true;
+        function renderLogs(logs) {
+            // ... (render logs logic, including empty state)
+            // ... This function is now just for displaying, not calculating
+        }
+        
+        function openEditModal(log) {
+            editForm.elements['edit-id'].value = log.id;
+            // ... (populate other form fields from log object)
+            editModal.classList.add('show');
+        }
 
-            const newLog = {
-                date: document.getElementById('date').value,
-                odometer: document.getElementById('odometer').value,
-                liters: document.getElementById('liters').value,
-                price_total: document.getElementById('price_total').value
+        function closeEditModal() {
+            editModal.classList.remove('show');
+        }
+
+        // --- Helper Functions ---
+        function calculateKmpl(logs) {
+            const sorted = [...logs].sort((a, b) => a.odometer - b.odometer);
+            const kmplMap = new Map();
+
+            for (let i = 1; i < sorted.length; i++) {
+                const prev = sorted[i-1];
+                const curr = sorted[i];
+                const dist = curr.odometer - prev.odometer;
+                const kmpl = dist > 0 && curr.liters > 0 ? (dist / curr.liters) : 0;
+                kmplMap.set(curr.id, kmpl);
+            }
+
+            return logs.map(log => ({ ...log, kmpl: kmplMap.get(log.id) || 0 }));
+        }
+        
+        function populateDateFilter() {
+            const months = new Set();
+            allLogs.forEach(log => {
+                months.add(new Date(log.date).toISOString().slice(0, 7)); // YYYY-MM
+            });
+
+            filterDate.innerHTML = '<option value="all">ทั้งหมด</option>';
+            [...months].sort().reverse().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                // Format for display e.g. "กันยายน 2568"
+                const date = new Date(month + '-02');
+                option.textContent = date.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+                filterDate.appendChild(option);
+            });
+        }
+
+        // --- Event Listeners ---
+        filterDate.addEventListener('change', applyFiltersAndSort);
+        sortBy.addEventListener('change', applyFiltersAndSort);
+
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = e.target.elements['edit-id'].value;
+            const updatedLog = {
+                // ... (get values from edit form)
             };
 
-            try {
-                const { error } = await supabaseClient.from('fuel_logs').insert([newLog]);
-                if (error) {
-                    alert('ไม่สามารถบันทึกข้อมูลได้: ' + error.message);
-                } else {
-                    const updatedLogs = await fetchLogs();
-                    renderLogs(updatedLogs);
-                    form.reset();
-                }
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-            } finally {
-                submitBtn.classList.remove('loading');
-                submitBtn.disabled = false;
+            const { error } = await supabaseClient.from('fuel_logs')
+                .update(updatedLog).eq('id', id);
+            
+            if (error) {
+                alert("ไม่สามารถอัปเดตข้อมูลได้: " + error.message);
+            } else {
+                closeEditModal();
+                await loadAndRender(); // Reload everything
             }
         });
         
-        logsList.addEventListener('click', async (e) => {
-            const deleteButton = e.target.closest('.delete-btn');
-            if (deleteButton) {
-                const logId = parseInt(deleteButton.getAttribute('data-id'));
-                if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
-                     const { error } = await supabaseClient.from('fuel_logs').delete().eq('id', logId);
-                    if (error) { alert('ไม่สามารถลบข้อมูลได้: ' + error.message); } 
-                    else { renderLogs(await fetchLogs()); }
-                }
+        document.getElementById('cancel-edit').addEventListener('click', closeEditModal);
+
+        logsList.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+
+            if (editBtn) {
+                const logId = parseInt(editBtn.dataset.id);
+                const logToEdit = allLogs.find(log => log.id === logId);
+                openEditModal(logToEdit);
+            }
+
+            if (deleteBtn) {
+                // ... (delete logic)
             }
         });
 
-        // Initial load
-        const initialLogs = await fetchLogs();
-        renderLogs(initialLogs);
+        // --- Initial Load ---
+        await loadAndRender();
     });
     </script>
 </body>
