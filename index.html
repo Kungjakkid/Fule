@@ -200,8 +200,10 @@
     <script>
     document.addEventListener('DOMContentLoaded', async () => {
         let allLogs = [];
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- ใส่ URL ของคุณ
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- ใส่ Key ของคุณ
+        
+        // --- vvv ข้อมูลของคุณถูกใส่ไว้ตรงนี้แล้ว vvv ---
+        const SUPABASE_URL = 'https://rwwybgwnyhmglzfknnbn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3d3liZ3dueWhtZ2x6ZmtubmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODE2MjYsImV4cCI6MjA3NDI1NzYyNn0.x0mhAUUA5-dpt4J0hPeSmz5DvJ1vtMiPZNB-QQvlMJM';
 
         const dashboardEl = {
             avgKmpl: document.getElementById('avg-kmpl'),
@@ -219,32 +221,190 @@
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // ... (โค้ด JavaScript ที่เหลือทั้งหมดใส่ที่นี่)
-
         async function loadAndRender() {
-            // ...
+            const { data, error } = await supabaseClient.from('fuel_logs').select('*');
+            if (error) {
+                console.error('Error fetching logs:', error);
+                alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+                allLogs = [];
+            } else {
+                allLogs = data;
+            }
+            populateDateFilter();
+            applyFiltersAndSort();
+            renderDashboard();
         }
+
+        function renderDashboard() {
+            if (allLogs.length < 2) {
+                dashboardEl.avgKmpl.textContent = '-.--';
+                dashboardEl.totalCost.textContent = allLogs.length === 1 ? allLogs[0].price_total.toLocaleString('en-US', {minimumFractionDigits: 2}) : '-.--';
+                dashboardEl.totalDistance.textContent = '-.--';
+                return;
+            }
+
+            const sortedByOdo = [...allLogs].sort((a,b) => a.odometer - b.odometer);
+            const totalCost = allLogs.reduce((sum, log) => sum + log.price_total, 0);
+            const totalDistance = sortedByOdo[sortedByOdo.length - 1].odometer - sortedByOdo[0].odometer;
+            const totalLiters = sortedByOdo.slice(1).reduce((sum, log) => sum + log.liters, 0);
+            const avgKmpl = totalLiters > 0 ? (totalDistance / totalLiters) : 0;
+
+            dashboardEl.avgKmpl.textContent = avgKmpl.toFixed(2);
+            dashboardEl.totalCost.textContent = totalCost.toLocaleString('en-US', {minimumFractionDigits: 2});
+            dashboardEl.totalDistance.textContent = totalDistance.toLocaleString();
+        }
+
+        function applyFiltersAndSort() {
+            let filteredLogs = [...allLogs];
+
+            const selectedMonth = filterDateEl.value;
+            if (selectedMonth !== 'all') {
+                filteredLogs = filteredLogs.filter(log => new Date(log.date).toISOString().startsWith(selectedMonth));
+            }
+
+            const logsWithKmpl = calculateKmpl(filteredLogs);
+            
+            logsWithKmpl.sort((a, b) => {
+                const sortValue = sortByEl.value;
+                switch(sortValue) {
+                    case 'date_asc': return new Date(a.date) - new Date(b.date);
+                    case 'kmpl_desc': return b.kmpl - a.kmpl;
+                    case 'kmpl_asc': return a.kmpl - b.kmpl;
+                    default: return new Date(b.date) - new Date(a.date);
+                }
+            });
+
+            renderLogs(logsWithKmpl);
+        }
+        
+        function renderLogs(logs) {
+            logsListEl.innerHTML = ''; // Clear previous logs
+            if (logs.length === 0) {
+                // You can add an empty state message here if you want
+                return;
+            }
+
+            logs.forEach(log => {
+                const card = document.createElement('div');
+                card.className = 'log-card';
+                card.innerHTML = `
+                    <div class="card-actions">
+                        <button class="action-btn edit-btn" data-id="${log.id}"><svg ...></svg></button>
+                        <button class="action-btn delete-btn" data-id="${log.id}"><svg ...></svg></button>
+                    </div>
+                    `;
+                logsListEl.appendChild(card);
+            });
+        }
+        
+        function openEditModal(log) {
+            editFormEl.elements['edit-id'].value = log.id;
+            editFormEl.elements['edit-date'].value = log.date;
+            editFormEl.elements['edit-odometer'].value = log.odometer;
+            editFormEl.elements['edit-liters'].value = log.liters;
+            editFormEl.elements['edit-price_total'].value = log.price_total;
+            editModalEl.classList.add('show');
+        }
+
+        function closeEditModal() {
+            editModalEl.classList.remove('show');
+        }
+
+        function calculateKmpl(logs) {
+            const sorted = [...logs].sort((a, b) => a.odometer - b.odometer);
+            const kmplMap = new Map();
+
+            for (let i = 1; i < sorted.length; i++) {
+                const prev = sorted[i-1];
+                const curr = sorted[i];
+                const dist = curr.odometer - prev.odometer;
+                const kmpl = dist > 0 && curr.liters > 0 ? (dist / curr.liters) : 0;
+                kmplMap.set(curr.id, kmpl);
+            }
+
+            return logs.map(log => ({ ...log, kmpl: kmplMap.get(log.id) || 0 }));
+        }
+        
+        function populateDateFilter() {
+            const months = new Set();
+            allLogs.forEach(log => months.add(new Date(log.date).toISOString().slice(0, 7)));
+
+            filterDateEl.innerHTML = '<option value="all">ทั้งหมด</option>';
+            [...months].sort().reverse().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                const date = new Date(month + '-02');
+                option.textContent = date.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+                filterDateEl.appendChild(option);
+            });
+        }
+
+        filterDateEl.addEventListener('change', applyFiltersAndSort);
+        sortByEl.addEventListener('change', applyFiltersAndSort);
 
         fuelForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            // ...
-            try {
-                // ...
-                const { error } = await supabaseClient.from('fuel_logs').insert([newLog]);
-                if (error) {
-                    alert('ไม่สามารถบันทึกข้อมูลได้: ' + error.message);
-                } else {
-                    fuelForm.reset();
-                    await loadAndRender(); // <<< บรรทัดที่แก้ไข
-                }
-            } catch (err) {
-                // ...
-            } finally {
-                // ...
+            const newLog = {
+                date: fuelForm.elements.date.value,
+                odometer: fuelForm.elements.odometer.value,
+                liters: fuelForm.elements.liters.value,
+                price_total: fuelForm.elements.price_total.value,
+            };
+            const { error } = await supabaseClient.from('fuel_logs').insert([newLog]);
+            if (error) {
+                alert("ไม่สามารถบันทึกข้อมูลได้: " + error.message);
+            } else {
+                fuelForm.reset();
+                await loadAndRender();
             }
         });
 
-        // ... (โค้ดส่วนที่เหลือ)
+        editFormEl.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = e.target.elements['edit-id'].value;
+            const updatedLog = {
+                date: e.target.elements['edit-date'].value,
+                odometer: e.target.elements['edit-odometer'].value,
+                liters: e.target.elements['edit-liters'].value,
+                price_total: e.target.elements['edit-price_total'].value,
+            };
+
+            const { error } = await supabaseClient.from('fuel_logs').update(updatedLog).eq('id', id);
+            
+            if (error) {
+                alert("ไม่สามารถอัปเดตข้อมูลได้: " + error.message);
+            } else {
+                closeEditModal();
+                await loadAndRender();
+            }
+        });
+        
+        document.getElementById('cancel-edit').addEventListener('click', closeEditModal);
+
+        logsListEl.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+
+            if (editBtn) {
+                const logId = parseInt(editBtn.dataset.id);
+                const logToEdit = allLogs.find(log => log.id === logId);
+                if (logToEdit) openEditModal(logToEdit);
+            }
+
+            if (deleteBtn) {
+                const logId = parseInt(deleteBtn.dataset.id);
+                if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
+                    const { error } = await supabaseClient.from('fuel_logs').delete().eq('id', logId);
+                    if (error) {
+                        alert("ไม่สามารถลบข้อมูลได้: " + error.message);
+                    } else {
+                        await loadAndRender();
+                    }
+                }
+            }
+        });
+
+        await loadAndRender();
     });
     </script>
 </body>
