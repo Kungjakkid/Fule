@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>Fuel Log App (Supabase)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -69,10 +69,10 @@
         const form = document.getElementById('fuel-form');
         const logsList = document.getElementById('logs-list');
         
-        // --- vvv ข้อมูลของคุณถูกใส่ไว้ตรงนี้แล้ว vvv ---
         const SUPABASE_URL = 'https://rwwybgwnyhmglzfknnbn.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3d3liZ3dueWhtZ2x6ZmtubmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODE2MjYsImV4cCI6MjA3NDI1NzYyNn0.x0mhAUUA5-dpt4J0hPeSmz5DvJ1vtMiPZNB-QQvlMJM';
         
+        // --- vvv โค้ดที่แก้ไข vvv ---
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
