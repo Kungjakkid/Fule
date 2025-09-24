@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fuel Log Pro</title>
+    <title>Fuel Log Pro (Archive Version)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -106,8 +106,8 @@
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        .log-info { display: flex; flex-wrap: wrap; gap: 25px; flex-grow: 1; align-items: center; }
-        .log-item { text-align: left; }
+        .log-info { display: flex; flex-wrap: wrap; gap: 20px; row-gap: 15px; flex-grow: 1; align-items: center; }
+        .log-item { text-align: left; min-width: 120px; }
         .log-item .label { color: var(--text-secondary); font-size: 0.8em; margin-bottom: 2px; }
         .log-item .value { font-size: 1.1em; font-weight: 500; }
         .log-item .value.highlight { color: var(--success-color); font-weight: 700; }
@@ -130,21 +130,11 @@
             font-size: 1.2em;
         }
         
-        /* vvv CSS ที่แก้ไข vvv */
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: flex-start; /* แก้จาก center */
-            padding-top: 5vh;      /* เพิ่มระยะห่างด้านบน */
-            overflow-y: auto;      /* ทำให้เลื่อนได้ */
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: flex-start;
+            padding-top: 5vh; overflow-y: auto; z-index: 1000;
         }
         .modal-overlay.show { display: flex; }
         .modal-content {
@@ -302,20 +292,24 @@
                         </div>
                     </div>
                     <div class="month-logs">
-                        ${logsInMonth.map(log => `
+                        ${logsInMonth.map(log => {
+                            const pricePerLiter = (log.liters > 0) ? (log.price_total / log.liters).toFixed(2) : '0.00';
+                            return `
                             <div class="log-card">
                                 <div class="log-info">
                                     <div class="log-item"><span class="label">วันที่</span><span class="value">${new Date(log.date).toLocaleDateString('th-TH', {day: '2-digit', month: 'short'})}</span></div>
                                     <div class="log-item"><span class="label">เลขไมล์</span><span class="value">${log.odometer.toLocaleString()} กม.</span></div>
+                                    <div class="log-item"><span class="label">จำนวน</span><span class="value">${log.liters.toFixed(3)} ลิตร</span></div>
+                                    <div class="log-item"><span class="label">ราคา/ลิตร</span><span class="value">${pricePerLiter} ฿</span></div>
                                     <div class="log-item"><span class="label">กม./ลิตร</span><span class="value highlight">${log.kmpl > 0 ? log.kmpl.toFixed(2) : '-.--'}</span></div>
-                                    <div class="log-item"><span class="label">ราคา</span><span class="value">${log.price_total.toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
+                                    <div class="log-item"><span class="label">ราคารวม</span><span class="value">${log.price_total.toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
                                 </div>
                                 <div class="card-actions">
                                     <button class="action-btn edit-btn" data-id="${log.id}"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
                                     <button class="action-btn delete-btn" data-id="${log.id}"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 `;
                 archiveEl.appendChild(archiveItem);
@@ -337,7 +331,6 @@
                 const kmpl = distance > 0 && currLog.liters > 0 ? (distance / currLog.liters) : 0;
                 kmplMap.set(currLog.id, kmpl);
             }
-            // Re-sort back to newest-first before returning
             return logs.map(log => ({ ...log, kmpl: kmplMap.get(log.id) || 0 })).sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
