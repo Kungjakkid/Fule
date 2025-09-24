@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fuel Log Pro (Archive Version)</title>
+    <title>Fuel Log Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -130,10 +130,21 @@
             font-size: 1.2em;
         }
         
+        /* vvv CSS ที่แก้ไข vvv */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: flex-start; /* แก้จาก center */
+            padding-top: 5vh;      /* เพิ่มระยะห่างด้านบน */
+            overflow-y: auto;      /* ทำให้เลื่อนได้ */
+            z-index: 1000;
         }
         .modal-overlay.show { display: flex; }
         .modal-content {
@@ -326,7 +337,8 @@
                 const kmpl = distance > 0 && currLog.liters > 0 ? (distance / currLog.liters) : 0;
                 kmplMap.set(currLog.id, kmpl);
             }
-            return logs.map(log => ({ ...log, kmpl: kmplMap.get(log.id) || 0 }));
+            // Re-sort back to newest-first before returning
+            return logs.map(log => ({ ...log, kmpl: kmplMap.get(log.id) || 0 })).sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
         function openModal(log = null) {
