@@ -177,7 +177,7 @@
         
         <div class="logs-container" id="logs-container">
             <div id="logs-list"></div>
-            </div>
+        </div>
 
         <div class="modal-overlay" id="edit-modal">
             <div class="modal-content">
@@ -200,8 +200,9 @@
     <script>
     document.addEventListener('DOMContentLoaded', async () => {
         let allLogs = [];
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- ใส่ URL ของคุณ
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- ใส่ Key ของคุณ
+        
+        const SUPABASE_URL = 'https://rwwybgwnyhmglzfknnbn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3d3liZ3dueWhtZ2x6ZmtubmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODE2MjYsImV4cCI6MjA3NDI1NzYyNn0.x0mhAUUA5-dpt4J0hPeSmz5DvJ1vtMiPZNB-QQvlMJM';
 
         const dashboardEl = {
             avgKmpl: document.getElementById('avg-kmpl'),
@@ -217,7 +218,7 @@
 
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
+
         async function loadAndRender() {
             const { data, error } = await supabaseClient.from('fuel_logs').select('*');
             if (error) {
@@ -237,7 +238,7 @@
             dashboardEl.totalCost.textContent = '0.00';
             dashboardEl.totalDistance.textContent = '0';
 
-            const totalCost = allLogs.reduce((sum, log) => sum + log.price_total, 0);
+            const totalCost = allLogs.reduce((sum, log) => sum + parseFloat(log.price_total), 0);
             if (totalCost > 0) {
                 dashboardEl.totalCost.textContent = totalCost.toLocaleString('en-US', {minimumFractionDigits: 2});
             }
@@ -246,9 +247,9 @@
                 return;
             }
 
-            const sortedByOdo = [...allLogs].sort((a,b) => a.odometer - b.odometer);
-            const totalDistance = sortedByOdo[sortedByOdo.length - 1].odometer - sortedByOdo[0].odometer;
-            const totalLiters = sortedByOdo.slice(1).reduce((sum, log) => sum + log.liters, 0);
+            const sortedByOdo = [...allLogs].sort((a,b) => parseFloat(a.odometer) - parseFloat(b.odometer));
+            const totalDistance = parseFloat(sortedByOdo[sortedByOdo.length - 1].odometer) - parseFloat(sortedByOdo[0].odometer);
+            const totalLiters = sortedByOdo.slice(1).reduce((sum, log) => sum + parseFloat(log.liters), 0);
             const avgKmpl = totalLiters > 0 ? (totalDistance / totalLiters) : 0;
 
             dashboardEl.avgKmpl.textContent = avgKmpl.toFixed(2);
@@ -278,7 +279,7 @@
         function renderLogs(logs) {
             logsListEl.innerHTML = '';
             if (logs.length === 0) {
-                // Handle empty state here if needed
+                logsListEl.innerHTML = `<div class="empty-state show"><p>ไม่พบข้อมูล</p></div>`;
                 return;
             }
             logs.forEach(log => {
@@ -286,10 +287,19 @@
                 card.className = 'log-card';
                 card.innerHTML = `
                     <div class="card-actions">
-                        <button class="action-btn edit-btn" data-id="${log.id}"><svg ...></svg></button>
-                        <button class="action-btn delete-btn" data-id="${log.id}"><svg ...></svg></button>
+                        <button class="action-btn edit-btn" data-id="${log.id}">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        </button>
+                        <button class="action-btn delete-btn" data-id="${log.id}">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        </button>
                     </div>
-                    `;
+                    <div class="log-item"><span class="label">วันที่</span><span class="value">${new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric'})}</span></div>
+                    <div class="log-item"><span class="label">เลขไมล์</span><span class="value">${parseFloat(log.odometer).toLocaleString()} กม.</span></div>
+                    <div class="log-item"><span class="label">อัตราสิ้นเปลือง</span><span class="value highlight">${log.kmpl.toFixed(2)} กม./ลิตร</span></div>
+                    <div class="log-item"><span class="label">จำนวน</span><span class="value">${parseFloat(log.liters).toFixed(3)} ลิตร</span></div>
+                    <div class="log-item"><span class="label">ราคารวม</span><span class="value">${parseFloat(log.price_total).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
+                `;
                 logsListEl.appendChild(card);
             });
         }
@@ -308,13 +318,13 @@
         }
 
         function calculateKmpl(logs) {
-            const sorted = [...logs].sort((a, b) => a.odometer - b.odometer);
+            const sorted = [...logs].sort((a, b) => parseFloat(a.odometer) - parseFloat(b.odometer));
             const kmplMap = new Map();
             for (let i = 1; i < sorted.length; i++) {
                 const prev = sorted[i-1];
                 const curr = sorted[i];
-                const dist = curr.odometer - prev.odometer;
-                const kmpl = dist > 0 && curr.liters > 0 ? (dist / curr.liters) : 0;
+                const dist = parseFloat(curr.odometer) - parseFloat(prev.odometer);
+                const kmpl = dist > 0 && parseFloat(curr.liters) > 0 ? (dist / parseFloat(curr.liters)) : 0;
                 kmplMap.set(curr.id, kmpl);
             }
             return logs.map(log => ({ ...log, kmpl: kmplMap.get(log.id) || 0 }));
@@ -333,7 +343,9 @@
                 option.textContent = date.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
                 filterDateEl.appendChild(option);
             });
-            filterDateEl.value = currentSelection;
+            if ([...months].includes(currentSelection)) {
+                filterDateEl.value = currentSelection;
+            }
         }
 
         filterDateEl.addEventListener('change', applyFiltersAndSort);
