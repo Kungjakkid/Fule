@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fuel Log App (New Design)</title>
+    <title>Fuel Log App (Final Version)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --primary-color: #3d52d5;
@@ -20,7 +22,6 @@
             --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        /* --- New Gradient Background --- */
         body {
             font-family: 'Sarabun', sans-serif;
             background: linear-gradient(120deg, #f0f3ff 0%, #e1e7ff 100%);
@@ -32,7 +33,6 @@
         .container { max-width: 700px; margin: auto; }
         h1 { text-align: center; color: var(--dark-color); margin-bottom: 25px; font-weight: 700; }
         
-        /* --- Glassmorphism Effect --- */
         .form-card {
             background: var(--card-bg);
             padding: 30px 35px;
@@ -72,7 +72,7 @@
             font-size: 1.1em;
             font-weight: 700;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s ease-in-out;
             position: relative;
         }
         .submit-btn:hover {
@@ -80,7 +80,6 @@
             box-shadow: 0 6px 20px rgba(61, 82, 213, 0.3);
         }
         
-        /* --- Button Loading State --- */
         .submit-btn.loading {
             cursor: not-allowed;
             background: #a4b0be;
@@ -102,7 +101,6 @@
 
         .logs-container h2 { border-bottom: 2px solid #e1e7ff; padding-bottom: 10px; margin-bottom: 20px; }
         
-        /* --- Log Card Animations --- */
         .log-card {
             background: #ffffff;
             border-radius: var(--border-radius);
@@ -133,9 +131,8 @@
         .delete-btn:hover { opacity: 1; }
         .delete-btn svg { width: 20px; height: 20px; color: var(--danger-color); }
         
-        /* --- Empty State --- */
         .empty-state {
-            display: none; /* Hidden by default */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -191,12 +188,32 @@
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        const ICONS = { /* ... Icons remain the same ... */ };
+        const ICONS = {
+            calendar: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>`,
+            speedometer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-14h2v2.27l-2 2V6zm-.5 5c0 .55.45 1 1 1s1-.45 1-1-.45-1-1-1-1 .45-1 1zm4 2.85l-2.8-2.8V15h-1.4v-4.03l-2.8 2.8-1.06-1.06L12 10.9l3.56 3.56L16.5 13.85z"/></svg>`,
+            gas: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h5v3l-3-3h-2c-2.21 0-4-1.79-4-4V5c0-2.21 1.79-4 4-4h1V0h-1C7.48 0 4 3.48 4 8v12h10v-3h-4v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-5z"/></svg>`,
+            money: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c2.14-.46 3.5-1.63 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>`,
+            road: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M22 10h-4V7c0-1.65-1.35-3-3-3s-3 1.35-3 3v3H8V7c0-1.65-1.35-3-3-3S2 5.35 2 7v3H0v10h24V10zM6 7c0-.55.45-1 1-1s1 .45 1 1v3H6V7zm12 0c0-.55.45-1 1-1s1 .45 1 1v3h-2V7z"/></svg>`,
+            trash: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
+        };
 
-        async function fetchLogs() { /* ... Function remains the same ... */ }
+        async function fetchLogs() {
+            const { data, error } = await supabaseClient.from('fuel_logs').select('*').order('date', { ascending: false });
+            if (error) {
+                console.error('Error fetching logs:', error);
+                return [];
+            }
+            return data;
+        }
 
         function renderLogs(logs) {
-            // Logic to show/hide empty state
+            if (!logs) { // เพิ่มการตรวจสอบเผื่อกรณี logs เป็น undefined
+                emptyState.classList.add('show');
+                logsList.innerHTML = '';
+                logsHeader.style.display = 'none';
+                return;
+            }
+
             if (logs.length === 0) {
                 emptyState.classList.add('show');
                 logsList.innerHTML = '';
@@ -206,16 +223,39 @@
                 logsHeader.style.display = 'block';
                 logsList.innerHTML = '';
 
-                // Calculation and rendering logic remains the same
                 const kmplMap = new Map();
                 const sortedForCalc = [...logs].sort((a, b) => parseFloat(a.odometer) - parseFloat(b.odometer));
-                for (let i = 1; i < sortedForCalc.length; i++) { /* ... */ }
+                for (let i = 1; i < sortedForCalc.length; i++) {
+                    const prevLog = sortedForCalc[i-1];
+                    const currentLog = sortedForCalc[i];
+                    const distance = parseFloat(currentLog.odometer) - parseFloat(prevLog.odometer);
+                    const liters = parseFloat(currentLog.liters);
+                    if (distance > 0 && liters > 0) {
+                        const kmpl = (distance / liters).toFixed(2);
+                        kmplMap.set(currentLog.id, kmpl);
+                    }
+                }
                 
-                logs.forEach(log => { /* ... */ });
+                logs.forEach(log => {
+                    const card = document.createElement('div');
+                    card.className = 'log-card';
+                    const pricePerLiter = (parseFloat(log.price_total) / parseFloat(log.liters)).toFixed(2);
+                    const kmpl = kmplMap.get(log.id) || '---';
+
+                    card.innerHTML = `
+                        <button class="delete-btn" data-id="${log.id}">${ICONS.trash}</button>
+                        <div class="log-item"><span class="label">${ICONS.calendar} วันที่</span><span class="value">${new Date(log.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric'})}</span></div>
+                        <div class="log-item"><span class="label">${ICONS.speedometer} เลขไมล์</span><span class="value">${parseFloat(log.odometer).toLocaleString()} กม.</span></div>
+                        <div class="log-item"><span class="label">${ICONS.road} อัตราสิ้นเปลือง</span><span class="value highlight">${kmpl} กม./ลิตร</span></div>
+                        <div class="log-item"><span class="label">${ICONS.gas} จำนวน</span><span class="value">${parseFloat(log.liters).toFixed(2)} ลิตร</span></div>
+                        <div class="log-item"><span class="label">${ICONS.money} ราคารวม</span><span class="value">${parseFloat(log.price_total).toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
+                        <div class="log-item"><span class="label">${ICONS.money} ราคา/ลิตร</span><span class="value">${pricePerLiter} ฿</span></div>
+                    `;
+                    logsList.appendChild(card);
+                });
             }
         }
         
-        // --- Modified Submit Logic for Loading State ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             submitBtn.classList.add('loading');
@@ -245,15 +285,22 @@
             }
         });
         
-        logsList.addEventListener('click', async (e) => { /* ... Delete logic remains the same ... */ });
-        
+        logsList.addEventListener('click', async (e) => {
+            const deleteButton = e.target.closest('.delete-btn');
+            if (deleteButton) {
+                const logId = parseInt(deleteButton.getAttribute('data-id'));
+                if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
+                     const { error } = await supabaseClient.from('fuel_logs').delete().eq('id', logId);
+                    if (error) { alert('ไม่สามารถลบข้อมูลได้: ' + error.message); } 
+                    else { renderLogs(await fetchLogs()); }
+                }
+            }
+        });
+
+        // Initial load
         const initialLogs = await fetchLogs();
         renderLogs(initialLogs);
     });
-
-    // NOTE: For brevity, some repeated code (ICONS, fetch/delete logic) is omitted here, 
-    // but it should be kept as-is from the previous complete version in your actual file.
-    // The provided code block above IS complete and has everything.
     </script>
 </body>
 </html>
