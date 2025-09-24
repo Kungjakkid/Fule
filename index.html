@@ -68,7 +68,6 @@
         }
         #add-log-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(74, 144, 226, 0.3); }
 
-        /* --- Monthly Archive Accordion --- */
         .month-archive { margin-bottom: 10px; }
         .month-summary {
             background: var(--bg-card);
@@ -82,7 +81,7 @@
             transition: background-color 0.2s;
         }
         .month-summary:hover { background-color: #2c323d; }
-        .month-summary h2 { margin: 0; font-size: 1.2em; }
+        .month-summary h2 { margin: 0; font-size: 1.2em; text-align: left; }
         .month-stats { display: flex; gap: 20px; color: var(--text-secondary); }
         .month-summary .arrow { transition: transform 0.3s ease; }
         .month-archive.active .arrow { transform: rotate(90deg); }
@@ -130,24 +129,48 @@
             font-weight: bold;
             font-size: 1.2em;
         }
-
-        /* --- Modal styles from previous version --- */
-        .modal-overlay { /* ... same as before ... */ }
-        /* ... other styles remain the same ... */
-
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-content {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border-color);
+        }
+        .modal-content h2 { margin-top: 0; }
+        .modal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .modal-actions button {
+            padding: 10px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer;
+        }
+        .btn-save { background-color: var(--success-color); color: #fff; }
+        .btn-cancel { background-color: #555; color: #fff; }
+        label { margin-bottom: 8px; font-weight: 500; font-size: 0.9em; color: var(--text-secondary); display: block; }
+        input {
+            width: 100%;
+            padding: 10px 15px; border: 1px solid var(--border-color);
+            border-radius: 10px; font-size: 1em; font-family: 'Sarabun', sans-serif;
+            background-color: #333947; color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1><svg ...></svg> Fuel Log Pro</h1>
+        <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="#ff4757"><path d="M12 3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h5v3l-3-3h-2c-2.21 0-4-1.79-4-4V5c0-2.21 1.79-4 4-4h1V0h-1C7.48 0 4 3.48 4 8v12h10v-3h-4v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-5z"/></svg> Fuel Log Pro</h1>
 
-        <div class="dashboard" id="dashboard">
-            </div>
+        <div class="dashboard" id="dashboard"></div>
 
         <div class="main-controls">
             <button id="add-log-btn">
-                <svg ...></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 เพิ่มรายการ
             </button>
         </div>
@@ -157,21 +180,39 @@
         <div class="monthly-total-summary" id="monthly-summary"></div>
 
         <div class="modal-overlay" id="log-modal">
+            <div class="modal-content">
+                <h2 id="modal-title"></h2>
+                <form id="log-form">
+                    <input type="hidden" id="log-id">
+                    <div class="modal-form">
+                        <div class="form-group"><label for="log-date">วันที่เติม</label><input type="date" id="log-date" required></div>
+                        <div class="form-group"><label for="log-odometer">เลขไมล์</label><input type="number" id="log-odometer" required></div>
+                        <div class="form-group"><label for="log-liters">จำนวนลิตร</label><input type="number" id="log-liters" step="0.001" required></div>
+                        <div class="form-group"><label for="log-price_total">ราคารวม</label><input type="number" id="log-price_total" step="0.01" required></div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-cancel" id="cancel-btn">ยกเลิก</button>
+                        <button type="submit" class="btn-save">บันทึก</button>
+                    </div>
+                </form>
             </div>
+        </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', async () => {
         let allLogs = [];
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- ใส่ URL ของคุณ
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- ใส่ Key ของคุณ
+        const SUPABASE_URL = 'https://rwwybgwnyhmglzfknnbn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3d3liZ3dueWhtZ2x6ZmtubmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODE2MjYsImV4cCI6MjA3NDI1NzYyNn0.x0mhAUUA5-dpt4J0hPeSmz5DvJ1vtMiPZNB-QQvlMJM';
 
         const dashboardEl = document.getElementById('dashboard');
         const archiveEl = document.getElementById('monthly-archive');
         const summaryEl = document.getElementById('monthly-summary');
+        const addLogBtn = document.getElementById('add-log-btn');
+        const logModalEl = document.getElementById('log-modal');
+        const logForm = document.getElementById('log-form');
+        const cancelBtn = document.getElementById('cancel-btn');
         
-        // ... (other DOM element variables) ...
-
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
@@ -190,7 +231,7 @@
                     odometer: parseFloat(log.odometer),
                     liters: parseFloat(log.liters),
                     price_total: parseFloat(log.price_total)
-                })).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort newest to oldest for display
+                })).sort((a, b) => new Date(b.date) - new Date(a.date));
             }
             
             const processedLogs = calculateKmpl(allLogs);
@@ -200,7 +241,11 @@
         }
 
         function renderDashboard(logs) {
-            const metrics = { avgKmpl: 0, lastTankCost: 0, distanceLastTank: 0 };
+            const metrics = {
+                avgKmpl: 0,
+                lastTankCost: 0,
+                distanceLastTank: 0
+            };
 
             if (logs.length >= 2) {
                 const sortedByOdo = [...logs].sort((a,b) => a.odometer - b.odometer);
@@ -219,10 +264,10 @@
         }
 
         function renderArchive(logs) {
-            archiveEl.innerHTML = ''; // Clear existing
+            archiveEl.innerHTML = '';
             
             const groupedByMonth = logs.reduce((acc, log) => {
-                const month = new Date(log.date).toISOString().slice(0, 7); // YYYY-MM
+                const month = new Date(log.date).toISOString().slice(0, 7);
                 if (!acc[month]) acc[month] = [];
                 acc[month].push(log);
                 return acc;
@@ -241,7 +286,7 @@
                         <h2>${monthName}</h2>
                         <div class="month-stats">
                             <span>${logsInMonth.length} รายการ</span>
-                            <span>รวม ${monthTotalCost.toLocaleString('en-US')} ฿</span>
+                            <span>รวม ${monthTotalCost.toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span>
                             <span class="arrow">▶</span>
                         </div>
                     </div>
@@ -255,8 +300,8 @@
                                     <div class="log-item"><span class="label">ราคา</span><span class="value">${log.price_total.toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
                                 </div>
                                 <div class="card-actions">
-                                    <button class="action-btn edit-btn" data-id="${log.id}"><svg ...></svg></button>
-                                    <button class="action-btn delete-btn" data-id="${log.id}"><svg ...></svg></button>
+                                    <button class="action-btn edit-btn" data-id="${log.id}"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+                                    <button class="action-btn delete-btn" data-id="${log.id}"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                                 </div>
                             </div>
                         `).join('')}
@@ -284,7 +329,42 @@
             return logs.map(log => ({ ...log, kmpl: kmplMap.get(log.id) || 0 }));
         }
 
-        // --- Event Listeners ---
+        function openModal(log = null) {
+            logForm.reset();
+            if (log) {
+                document.getElementById('modal-title').textContent = 'แก้ไขรายการ';
+                document.getElementById('log-id').value = log.id;
+                document.getElementById('log-date').value = log.date;
+                document.getElementById('log-odometer').value = log.odometer;
+                document.getElementById('log-liters').value = log.liters;
+                document.getElementById('log-price_total').value = log.price_total;
+            } else {
+                document.getElementById('modal-title').textContent = 'เพิ่มรายการใหม่';
+                document.getElementById('log-id').value = '';
+            }
+            logModalEl.classList.add('show');
+        }
+
+        function closeModal() { logModalEl.classList.remove('show'); }
+
+        logForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('log-id').value;
+            const logData = {
+                date: document.getElementById('log-date').value,
+                odometer: parseFloat(document.getElementById('log-odometer').value),
+                liters: parseFloat(document.getElementById('log-liters').value),
+                price_total: parseFloat(document.getElementById('log-price_total').value),
+            };
+
+            const { error } = id
+                ? await supabaseClient.from('fuel_logs').update(logData).eq('id', id)
+                : await supabaseClient.from('fuel_logs').insert([logData]);
+
+            if (error) { alert("เกิดข้อผิดพลาด: " + error.message); }
+            else { closeModal(); await loadAndProcessData(); }
+        });
+
         archiveEl.addEventListener('click', (e) => {
             const summaryHeader = e.target.closest('.month-summary');
             if (summaryHeader) {
@@ -299,8 +379,27 @@
             }
         });
         
-        // ... (other listeners for add, edit, delete modals) ...
+        archiveEl.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+            if(editBtn){
+                const logId = parseInt(editBtn.dataset.id);
+                const logToEdit = allLogs.find(log => log.id === logId);
+                if (logToEdit) openModal(logToEdit);
+            }
+            if(deleteBtn){
+                const logId = parseInt(deleteBtn.dataset.id);
+                if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
+                    const { error } = await supabaseClient.from('fuel_logs').delete().eq('id', logId);
+                    if (error) { alert("ไม่สามารถลบข้อมูลได้: " + error.message); }
+                    else { await loadAndProcessData(); }
+                }
+            }
+        });
 
+        addLogBtn.addEventListener('click', () => openModal());
+        cancelBtn.addEventListener('click', closeModal);
+        
         initializeApp();
     });
     </script>
