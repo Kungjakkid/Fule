@@ -201,8 +201,9 @@
     document.addEventListener('DOMContentLoaded', async () => {
         let allLogs = [];
         let chartInstance = null;
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- ใส่ URL ของคุณ
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- ใส่ Key ของคุณ
+        
+        const SUPABASE_URL = 'https://rwwybgwnyhmglzfknnbn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3d3liZ3dueWhtZ2x6ZmtubmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODE2MjYsImV4cCI6MjA3NDI1NzYyNn0.x0mhAUUA5-dpt4J0hPeSmz5DvJ1vtMiPZNB-QQvlMJM';
 
         const dashboardEl = document.getElementById('dashboard');
         const chartCanvas = document.getElementById('kmpl-chart').getContext('2d');
@@ -246,7 +247,7 @@
             if (selectedMonth !== 'all') {
                 filteredLogs = filteredLogs.filter(log => new Date(log.date).toISOString().startsWith(selectedMonth));
             }
-            // Sort logic will be applied in renderLogs for simplicity now
+            
             renderDashboard(filteredLogs);
             renderChart(filteredLogs);
             renderLogs(filteredLogs);
@@ -365,7 +366,21 @@
         }
 
         function populateFilters(logs) {
-            // ... (populate filter options)
+            const months = new Set();
+            logs.forEach(log => months.add(new Date(log.date).toISOString().slice(0, 7)));
+
+            const currentSelection = filterDateEl.value;
+            filterDateEl.innerHTML = '<option value="all">ทั้งหมด</option>';
+            [...months].sort().reverse().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                const date = new Date(month + '-02');
+                option.textContent = date.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+                filterDateEl.appendChild(option);
+            });
+            if ([...months].includes(currentSelection)) {
+                filterDateEl.value = currentSelection;
+            }
         }
 
         addLogBtn.addEventListener('click', () => openModal());
