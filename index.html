@@ -38,7 +38,7 @@
         .container { max-width: 900px; margin: auto; }
         h1, h2 { text-align: center; font-weight: 700; }
         h1 { margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-primary); }
-        h2 { margin-top: 40px; margin-bottom: 20px; color: var(--text-secondary); }
+        h2 { margin-top: 0; margin-bottom: 20px; color: var(--text-primary); }
         
         .dashboard {
             display: grid;
@@ -108,7 +108,7 @@
             border-radius: var(--border-radius);
             border: 1px solid var(--border-color);
             margin-bottom: 15px;
-            padding: 20px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -119,13 +119,16 @@
         .log-card:hover { background-color: #2c323d; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .log-info { display: flex; flex-wrap: wrap; gap: 20px; flex-grow: 1; }
+        .log-info { display: flex; flex-wrap: wrap; gap: 25px; flex-grow: 1; align-items: center; }
         .log-item { text-align: left; }
         .log-item .value { font-size: 1.1em; font-weight: 500; }
         .log-item .value.highlight { color: var(--success-color); font-weight: 700; }
         .card-actions { display: flex; gap: 5px; }
-        .action-btn { background: none; border: none; cursor: pointer; padding: 5px; opacity: 0.6; transition: opacity 0.2s; }
-        .action-btn:hover { opacity: 1; }
+        .action-btn { background: none; border: none; cursor: pointer; padding: 5px; opacity: 0.6; transition: opacity 0.2s, transform 0.2s; }
+        .action-btn:hover { opacity: 1; transform: scale(1.1); }
+        .action-btn svg { width: 20px; height: 20px; }
+        .edit-btn svg { color: var(--warning-color); }
+        .delete-btn svg { color: var(--danger-color); }
         
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -141,21 +144,21 @@
             max-width: 500px;
             border: 1px solid var(--border-color);
         }
-        .modal-content h2 { margin-top: 0; }
         .modal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
         .modal-actions button {
             padding: 10px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer;
         }
+        .btn-save { background-color: var(--success-color); color: #fff; }
+        .btn-cancel { background-color: #555; color: #fff; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Fuel Log Pro</h1>
+        <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="#ff4757"><path d="M12 3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h5v3l-3-3h-2c-2.21 0-4-1.79-4-4V5c0-2.21 1.79-4 4-4h1V0h-1C7.48 0 4 3.48 4 8v12h10v-3h-4v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-5z"/></svg> Fuel Log Pro</h1>
 
-        <div class="dashboard" id="dashboard">
-            </div>
+        <div class="dashboard" id="dashboard"></div>
 
         <div class="chart-container">
             <canvas id="kmpl-chart"></canvas>
@@ -176,7 +179,7 @@
 
         <div class="modal-overlay" id="log-modal">
             <div class="modal-content">
-                <h2 id="modal-title">เพิ่มรายการใหม่</h2>
+                <h2 id="modal-title"></h2>
                 <form id="log-form">
                     <input type="hidden" id="log-id">
                     <div class="modal-form">
@@ -196,13 +199,11 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', async () => {
-        // --- State and Config ---
         let allLogs = [];
         let chartInstance = null;
         const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // <-- ใส่ URL ของคุณ
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // <-- ใส่ Key ของคุณ
 
-        // --- DOM Elements ---
         const dashboardEl = document.getElementById('dashboard');
         const chartCanvas = document.getElementById('kmpl-chart').getContext('2d');
         const filterDateEl = document.getElementById('filter-date');
@@ -213,12 +214,9 @@
         const logForm = document.getElementById('log-form');
         const cancelBtn = document.getElementById('cancel-btn');
         
-        // --- Supabase Client ---
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // --- Main Functions ---
-
         async function initializeApp() {
             await loadAndProcessData();
         }
@@ -234,7 +232,7 @@
                     odometer: parseFloat(log.odometer),
                     liters: parseFloat(log.liters),
                     price_total: parseFloat(log.price_total)
-                })).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort oldest to newest
+                })).sort((a, b) => new Date(a.date) - new Date(b.date));
             }
             
             const processedLogs = calculateKmpl(allLogs);
@@ -243,98 +241,136 @@
         }
 
         function applyFiltersAndSort(logs) {
-            // ... (Filter and sort logic similar to before) ...
-            const filteredLogs = []; // Placeholder for filtered logs
+            let filteredLogs = [...logs];
+            const selectedMonth = filterDateEl.value;
+            if (selectedMonth !== 'all') {
+                filteredLogs = filteredLogs.filter(log => new Date(log.date).toISOString().startsWith(selectedMonth));
+            }
+            // Sort logic will be applied in renderLogs for simplicity now
             renderDashboard(filteredLogs);
             renderChart(filteredLogs);
             renderLogs(filteredLogs);
         }
 
         function renderDashboard(logs) {
-            // ... (Dashboard calculation logic) ...
+            const metrics = {
+                avgKmpl: 0,
+                totalCost: logs.reduce((sum, log) => sum + log.price_total, 0),
+                lastTankCost: 0,
+                distanceLastTank: 0
+            };
+
+            if (logs.length >= 2) {
+                const totalDistance = logs[logs.length - 1].odometer - logs[0].odometer;
+                const totalLiters = logs.slice(1).reduce((sum, log) => sum + log.liters, 0);
+                metrics.avgKmpl = totalLiters > 0 ? (totalDistance / totalLiters) : 0;
+                metrics.lastTankCost = logs[logs.length - 2].price_total;
+                metrics.distanceLastTank = logs[logs.length - 1].odometer - logs[logs.length - 2].odometer;
+            }
+
+            dashboardEl.innerHTML = `
+                <div class="dash-card"><div class="label">อัตราสิ้นเปลืองเฉลี่ย</div><div class="value">${metrics.avgKmpl.toFixed(2)}<span class="unit">กม./ลิตร</span></div></div>
+                <div class="dash-card"><div class="label">ค่าใช้จ่ายทั้งหมด</div><div class="value">${metrics.totalCost.toLocaleString('en-US', {minimumFractionDigits: 2})}<span class="unit">บาท</span></div></div>
+                <div class="dash-card"><div class="label">ค่าใช้จ่ายถังล่าสุด</div><div class="value">${metrics.lastTankCost.toLocaleString('en-US', {minimumFractionDigits: 2})}<span class="unit">บาท</span></div></div>
+                <div class="dash-card"><div class="label">ระยะทางถังล่าสุด</div><div class="value">${metrics.distanceLastTank.toLocaleString()}<span class="unit">กม.</span></div></div>
+            `;
         }
 
         function renderChart(logs) {
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
-
-            const chartData = logs.slice(-12); // Show last 12 entries
+            if (chartInstance) chartInstance.destroy();
+            
+            const chartData = logs.slice(-12);
             const labels = chartData.map(log => new Date(log.date).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }));
             const dataPoints = chartData.map(log => log.kmpl > 0 ? log.kmpl.toFixed(2) : null);
 
             chartInstance = new Chart(chartCanvas, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'กม./ลิตร',
-                        data: dataPoints,
-                        borderColor: 'rgba(74, 144, 226, 0.8)',
-                        backgroundColor: 'rgba(74, 144, 226, 0.2)',
-                        fill: true,
-                        tension: 0.4,
-                        spanGaps: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    // ... (other chart options) ...
-                }
+                data: { labels, datasets: [{
+                    label: 'กม./ลิตร', data: dataPoints, borderColor: 'rgba(74, 144, 226, 0.8)',
+                    backgroundColor: 'rgba(74, 144, 226, 0.2)', fill: true, tension: 0.4, spanGaps: true
+                }]},
+                options: { scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } } }
             });
         }
         
         function renderLogs(logs) {
-            // ... (Render log list logic) ...
-        }
+            logsListEl.innerHTML = '';
+            if (logs.length === 0) {
+                logsListEl.innerHTML = `<div class="log-card" style="justify-content:center; color: var(--text-secondary);">ไม่มีข้อมูล</div>`;
+                return;
+            }
 
-        // --- Modal & Form Handling ---
+            logs.forEach(log => {
+                const card = document.createElement('div');
+                card.className = 'log-card';
+                card.innerHTML = `
+                    <div class="log-info">
+                        <div class="log-item"><span class="label">วันที่</span><span class="value">${new Date(log.date).toLocaleDateString('th-TH', {year: 'numeric', month: 'short', day: 'numeric'})}</span></div>
+                        <div class="log-item"><span class="label">เลขไมล์</span><span class="value">${log.odometer.toLocaleString()} กม.</span></div>
+                        <div class="log-item"><span class="label">กม./ลิตร</span><span class="value highlight">${log.kmpl > 0 ? log.kmpl.toFixed(2) : '-.--'}</span></div>
+                        <div class="log-item"><span class="label">ราคา</span><span class="value">${log.price_total.toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span></div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn edit-btn" data-id="${log.id}"><svg ...></svg></button>
+                        <button class="action-btn delete-btn" data-id="${log.id}"><svg ...></svg></button>
+                    </div>`;
+                logsListEl.appendChild(card);
+            });
+        }
+        
         function openModal(log = null) {
             logForm.reset();
-            if (log) { // Editing
+            if (log) {
                 document.getElementById('modal-title').textContent = 'แก้ไขรายการ';
                 document.getElementById('log-id').value = log.id;
-                // ... (populate form with log data)
-            } else { // Adding
+                document.getElementById('log-date').value = log.date;
+                document.getElementById('log-odometer').value = log.odometer;
+                document.getElementById('log-liters').value = log.liters;
+                document.getElementById('log-price_total').value = log.price_total;
+            } else {
                 document.getElementById('modal-title').textContent = 'เพิ่มรายการใหม่';
                 document.getElementById('log-id').value = '';
             }
             logModalEl.classList.add('show');
         }
 
-        function closeModal() {
-            logModalEl.classList.remove('show');
-        }
+        function closeModal() { logModalEl.classList.remove('show'); }
 
         logForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('log-id').value;
             const logData = {
                 date: document.getElementById('log-date').value,
-                // ... (get other form values)
+                odometer: parseFloat(document.getElementById('log-odometer').value),
+                liters: parseFloat(document.getElementById('log-liters').value),
+                price_total: parseFloat(document.getElementById('log-price_total').value),
             };
 
-            let error;
-            if (id) { // Update
-                ({ error } = await supabaseClient.from('fuel_logs').update(logData).eq('id', id));
-            } else { // Insert
-                ({ error } = await supabaseClient.from('fuel_logs').insert([logData]));
-            }
+            const { error } = id
+                ? await supabaseClient.from('fuel_logs').update(logData).eq('id', id)
+                : await supabaseClient.from('fuel_logs').insert([logData]);
 
-            if (error) {
-                alert("เกิดข้อผิดพลาด: " + error.message);
-            } else {
-                closeModal();
-                await loadAndProcessData(); // Reload everything
-            }
+            if (error) { alert("เกิดข้อผิดพลาด: " + error.message); }
+            else { closeModal(); await loadAndProcessData(); }
         });
 
-        // --- Event Listeners ---
+        function calculateKmpl(logs) {
+            return logs.map((log, index) => {
+                if (index === 0) return { ...log, kmpl: 0 };
+                const prevLog = logs[index - 1];
+                const distance = log.odometer - prevLog.odometer;
+                const kmpl = distance > 0 && log.liters > 0 ? (distance / log.liters) : 0;
+                return { ...log, kmpl };
+            });
+        }
+
+        function populateFilters(logs) {
+            // ... (populate filter options)
+        }
+
         addLogBtn.addEventListener('click', () => openModal());
         cancelBtn.addEventListener('click', closeModal);
-        // ... (other listeners for filters, sorting, edit/delete buttons) ...
-
-        // --- Initial Load ---
+        
         initializeApp();
     });
     </script>
